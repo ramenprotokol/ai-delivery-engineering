@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  markdownlint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Markdown files
+        # Configuration is read from .markdownlint-cli2.jsonc at the repo root,
+        # so local `npx markdownlint-cli2` and CI use identical rules.
+        uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          globs: "**/*.md"
+
+  link-check:
+    name: Link check
+    runs-on: ubuntu-latest
+    # Non-blocking: external transient failures should not gate merges.
+    # The job reports results but the workflow step does not fail the PR.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >
+            --verbose
+            --no-progress
+            --accept 200,201,204,206,301,302,303,307,308,429
+            --exclude-loopback
+            --exclude "^mailto:"
+            --exclude "^https://github\.com/ramenprotokol/ai-delivery-engineering/(issues|discussions|pulls)"
+            ./**/*.md
+          fail: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

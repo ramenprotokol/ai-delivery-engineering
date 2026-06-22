@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+title: "AI Delivery Engineering"
+message: >-
+  If you reference or build on this work, please cite it using
+  the metadata in this file.
+type: software
+authors:
+  - name: "Ramen Protocol"
+version: 0.1.0
+date-released: "2026-06-21"
+license: MIT
+repository-code: "https://github.com/ramenprotokol/ai-delivery-engineering"
+abstract: >-
+  A public methodology, template library, and reference implementation
+  for AI-assisted software delivery. Covers the full delivery lifecycle —
+  planning, architecture, validation, release readiness, and incident
+  response — with concrete checklists, worked examples, and decision
+  frameworks. Designed to demonstrate what it looks like when humans
+  own architecture and accountability while AI accelerates execution.
+keywords:
+  - ai-delivery
+  - software-delivery
+  - ai-assisted-engineering
+  - validation
+  - release-readiness
+  - delivery-lifecycle
+  - human-in-the-loop

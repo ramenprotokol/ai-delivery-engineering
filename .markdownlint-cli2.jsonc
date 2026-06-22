@@ -1,0 +1,18 @@
+{
+  // Markdown lint configuration for the ai-delivery-engineering repository.
+  // Style rules are kept practical for a documentation repo: prose line length
+  // and inline HTML (used for mermaid <br/> and tables) are allowed.
+  "config": {
+    "default": true,
+    "MD013": false,        // line length — prose and tables are not wrapped
+    "MD033": false,        // inline HTML — used for <br/> in mermaid and tables
+    "MD041": false,        // first line in file need not be a top-level heading (badges)
+    "MD024": { "siblings_only": true }, // duplicate headings allowed if not siblings
+    "MD046": false,        // code block style — both fenced and indented allowed
+    "MD029": false,        // ordered list numbering style
+    "MD060": false,        // table column style — compact pipes are fine
+    "MD036": false         // emphasis-as-label is intentional in filled templates (Pros/Cons, In scope)
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["node_modules", ".git"]
+}

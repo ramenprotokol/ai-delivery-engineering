@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: Questions and discussion
+    url: https://github.com/ramenprotokol/ai-delivery-engineering/discussions
+    about: >
+      For questions about the methodology, how to use these templates, or general
+      discussion about AI-assisted delivery engineering — open a GitHub Discussion
+      rather than an issue. Issues are for concrete bugs and actionable feature requests.

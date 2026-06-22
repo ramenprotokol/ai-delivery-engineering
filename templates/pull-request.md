@@ -42,7 +42,7 @@ Be specific. Link to the design doc, ADR, or issue that motivated this change. F
 
 ### Why this approach
 
-The rate limiter is applied in middleware rather than at the handler level so it can be enforced consistently across all routes without per-handler changes. The config-file approach (rather than database-driven) was chosen because rate-limit values change infrequently and a file reload is faster to operationalize than a DB query on the hot path. See [ADR-007](../examples/sample-architecture-decision-record.md) for the full decision record.
+The rate limiter is applied in middleware rather than at the handler level so it can be enforced consistently across all routes without per-handler changes. The retry and dead-letter queue backing store for failed deliveries uses Redis sorted sets; see [ADR-0004](../examples/sample-architecture-decision-record.md) for that adjacent decision from this release.
 
 ---
 

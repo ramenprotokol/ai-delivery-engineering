@@ -16,8 +16,17 @@ A record attached to a pull request or change set that documents which parts of 
 **Blast Radius**
 The scope of systems, users, or data that would be affected if a change fails in production. A change with a large blast radius requires more validation, a staged rollout, or a feature flag. See [Risk Management](risk-management.md).
 
+**Canary (Canary Release)**
+A deployment strategy that sends a small slice of real traffic to a new version of a service while the rest continues hitting the old version, allowing issues to surface with limited blast radius before a full rollout.
+
+**Circuit Breaker**
+A resilience pattern that monitors failure rates on a downstream dependency and, when a threshold is breached, stops sending requests to that dependency for a cool-down period rather than letting failures cascade.
+
 **Contract Test**
 A test that verifies an API consumer and provider agree on the shape and behavior of their interface. Used to catch integration failures before they reach end-to-end or production environments. See [Testing Strategy](testing-strategy.md).
+
+**Dead-Letter Queue (DLQ)**
+A secondary queue that receives messages or jobs that have exhausted their retry attempts, preserving them for inspection, manual replay, or alerting rather than silently dropping them.
 
 **Definition of Done**
 The explicit set of conditions a unit of work must satisfy before it is considered complete. Typically includes passing tests, a completed checklist, peer review approval, and deployment to at least a staging environment. See [Release Readiness](release-readiness.md).
@@ -28,6 +37,9 @@ A defined checkpoint in the delivery lifecycle where a human explicitly approves
 **Evidence**
 Concrete, verifiable output that a unit of work meets its acceptance criteria. Evidence includes test run results, deployment logs, screenshots of verified behavior, and completed checklists. Assertions without evidence are not acceptable as proof of completeness. See [Validation Framework](validation-framework.md).
 
+**Fail-Open**
+A safety posture where a system continues to allow requests through when a protective control (such as a rate limiter or auth check) is unavailable or errors, trading security or enforcement for availability — the opposite of fail-closed.
+
 **Feature Flag**
 A runtime configuration switch that enables or disables a feature in production without a code deployment. Used to decouple release from deployment and to limit blast radius during rollouts. See [Release Readiness](release-readiness.md).
 
@@ -36,6 +48,9 @@ An API endpoint, method signature, parameter name, or behavior that an AI model 
 
 **Human-in-the-Loop**
 The practice of requiring a human decision at specific points in an automated or AI-assisted process. In this workflow, humans are in the loop at every delivery gate — the loop is not considered complete without their input. See [Human-in-the-Loop](human-in-the-loop.md).
+
+**Idempotency / Idempotency Key**
+The property of an operation where executing it more than once produces the same result as executing it once; an idempotency key is a unique token included with a request so that retries can be detected and deduplicated safely.
 
 **Incident**
 An unplanned disruption or degradation of a production system that affects users or violates a service level objective. Incidents trigger a postmortem. See [Incident Postmortem template](../templates/incident-postmortem.md).
@@ -60,6 +75,9 @@ The act of reverting a deployed change to a previous known-good state. A rollbac
 
 **Runbook**
 A documented, step-by-step procedure for a repeatable operational task — deploying a service, rotating credentials, responding to a specific alert. Runbooks exist so that any qualified engineer can execute the procedure without needing to locate the original author. See the [Runbook template](../templates/runbook.md).
+
+**SLO (Service Level Objective)**
+A target for a specific reliability or performance metric — such as 99.9% availability or p99 latency under 200 ms — against which a service is measured; breaching an SLO triggers an incident review. See [Incident](../templates/incident-postmortem.md).
 
 **Staged Rollout**
 A deployment strategy that gradually increases the percentage of traffic or users directed to a new version, allowing monitoring between increments. Used to limit blast radius and catch regressions before full rollout. See [Release Readiness](release-readiness.md).

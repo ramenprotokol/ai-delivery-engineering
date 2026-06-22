@@ -77,7 +77,7 @@ The full checklist lives in [checklists/release-readiness.md](../checklists/rele
 
 ## Rollback and Reversibility
 
-Every release plan must answer: "How do we undo this in under 15 minutes?"
+Every release plan must answer: "How do we undo this in under 10 minutes?"
 
 ### Reversibility tiers
 
@@ -167,7 +167,7 @@ Anything that fails post-release verification triggers the rollback procedure ab
 
 ## Worked Example: Beacon v2.3 Release
 
-**Change:** Beacon's `/dispatch` endpoint adds support for batched notification requests (up to 100 recipients per call). New request schema, new internal queuing path, new DLQ for failed dispatches.
+**Change:** Beacon's `/dispatch` endpoint adds support for batched notification requests (up to 100 recipients per call). New request schema, new internal queuing path, new dead-letter queue (DLQ) for failed dispatches.
 
 ### Gate walkthrough
 

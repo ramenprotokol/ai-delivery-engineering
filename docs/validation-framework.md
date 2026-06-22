@@ -64,13 +64,13 @@ Every change originates from a requirement. Before a change is merged, each acce
 
 For AI-generated implementations, this step is especially important. AI will implement what it inferred from the prompt, which is not always what was intended. The delivery engineer must read the acceptance criteria and verify the implementation matches — not assume alignment.
 
-**Beacon example.** A ticket asks for rate limiting on `POST /v1/messages/send` — max 1,000 requests per API key per minute, with a `429` response and a `Retry-After` header. After AI generates the middleware:
+**Beacon example.** A ticket asks for rate limiting on `POST /v1/send` — max 500 requests per tenant per 60-second window, with a `429` response and a `Retry-After` header. After AI generates the middleware:
 
-- [ ] Requests above 1,000/min return `429`
+- [ ] Requests above 500 per 60-second window return `429`
 - [ ] `Retry-After` header is present and reflects the correct reset window
 - [ ] Requests below the limit pass through without added latency
-- [ ] Rate limit state is per API key, not global
-- [ ] Limit resets on the minute boundary, not on a rolling window
+- [ ] Rate limit state is per tenant, not global
+- [ ] Limit is enforced over a rolling/sliding 60-second window (not reset on a fixed minute boundary)
 
 Each item must be verified by running the actual behavior — not by reading the code.
 
@@ -84,7 +84,7 @@ npm run dev
 
 # Confirm the send endpoint is reachable
 curl -s -w "\n%{http_code}" \
-  -X POST http://localhost:3000/v1/messages/send \
+  -X POST http://localhost:3000/v1/send \
   -H "Authorization: Bearer test-key-001" \
   -H "Content-Type: application/json" \
   -d '{"channel":"email","to":"test@example.invalid","subject":"Validation test","body":"hello"}'
@@ -116,7 +116,7 @@ Before merging any feature or behavioral change:
 - Confirm the relevant metric (or a new one) is incremented
 - Confirm an alert or monitor exists if the path can fail silently
 
-**Beacon example.** A new delivery channel (SMS via Beacon's `POST /v1/messages/send` with `channel: sms`) must emit a `delivery.attempted` event with `channel=sms`, a `delivery.succeeded` or `delivery.failed` event, and a duration metric. Without these, on-call has no visibility into whether the channel is working.
+**Beacon example.** A new delivery channel (SMS via Beacon's `POST /v1/send` with `channel: sms`) must emit a `delivery.attempted` event with `channel=sms`, a `delivery.succeeded` or `delivery.failed` event, and a duration metric. Without these, on-call has no visibility into whether the channel is working.
 
 ---
 

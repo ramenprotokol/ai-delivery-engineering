@@ -1,7 +1,7 @@
 # Release Plan: Beacon v1.3.0 — Rate Limiting
 
 **Version:** Beacon v1.3.0  
-**Feature:** Per-caller rate limiting for outbound notification requests  
+**Feature:** Per-tenant rate limiting for outbound notification requests  
 **Release type:** Feature release  
 **Target date:** 2026-04-18  
 **Release owner:** Delivery engineer  
@@ -11,7 +11,7 @@
 
 ## 1. Summary
 
-Beacon v1.3.0 ships per-caller rate limiting: a sliding window counter (backed by Redis) enforces configurable request quotas per API key per minute. Callers who exceed their quota receive HTTP 429 with a `Retry-After` header. The feature was fully tested against the plan in [examples/sample-test-plan.md](sample-test-plan.md).
+Beacon v1.3.0 ships per-tenant rate limiting: a sliding window counter (backed by Redis) enforces configurable request quotas per tenant per 60-second window. Tenants who exceed their quota receive HTTP 429 with a `Retry-After` header. The feature was fully tested against the plan in [examples/sample-test-plan.md](sample-test-plan.md).
 
 This release carries medium risk. Rate limiting sits in the hot path of every inbound request. A misconfiguration could reject legitimate traffic. The staged rollout and monitoring thresholds below are sized for that risk.
 
@@ -35,34 +35,34 @@ This release carries medium risk. Rate limiting sits in the hot path of every in
 
 ### Stage 1 — Internal traffic only (Day 1, 09:00 local)
 
-Enable rate limiting only for internal Beacon test callers (`caller-internal-*`). Real production callers are unaffected. Limits are set 10× above any observed internal request rate so no legitimate request is rejected.
+Enable rate limiting only for internal Beacon test tenants (`tenant-internal-*`). Real production tenants are unaffected. Limits are set 10× above any observed internal request rate so no legitimate request is rejected.
 
 **Duration:** 2 hours minimum  
 **Gate to Stage 2:** Zero unexpected 429s in logs; `beacon_ratelimiter_redis_error_total` = 0; no latency increase on `beacon_request_duration_p99`.
 
 ---
 
-### Stage 2 — 10% of production callers (Day 1, 11:00 local)
+### Stage 2 — 10% of production tenants (Day 1, 11:00 local)
 
-Enable rate limiting for 10% of production API keys, selected by consistent hash on the key prefix. All selected callers are pre-notified that limits will apply. Quota values: 500 req / 60 s (well above observed p99 caller burst).
+Enable rate limiting for 10% of production tenants, selected by consistent hash on the tenant identifier. All selected tenants are pre-notified that limits will apply. Quota values: 500 req / 60 s per tenant (well above observed p99 tenant burst).
 
 **Duration:** 4 hours minimum  
-**Gate to Stage 3:** 429 rate < 0.1% of requests in this cohort; no caller-reported incidents; `beacon_ratelimiter_redis_error_total` = 0; latency within 5% of pre-release baseline.
+**Gate to Stage 3:** 429 rate < 0.1% of requests in this cohort; no tenant-reported incidents; `beacon_ratelimiter_redis_error_total` = 0; latency within 5% of pre-release baseline.
 
 ---
 
-### Stage 3 — 50% of production callers (Day 1, 15:00 local)
+### Stage 3 — 50% of production tenants (Day 1, 15:00 local)
 
-Expand to half of production callers by the same hash ring. No quota changes from Stage 2.
+Expand to half of production tenants by the same hash ring. No quota changes from Stage 2.
 
 **Duration:** 4 hours minimum  
 **Gate to Stage 4:** Same thresholds as Stage 2. On-call engineer active.
 
 ---
 
-### Stage 4 — 100% of production callers (Day 2, 09:00 local)
+### Stage 4 — 100% of production tenants (Day 2, 09:00 local)
 
-Enable rate limiting for all production callers. This is full rollout.
+Enable rate limiting for all production tenants. This is full rollout.
 
 **Duration:** Hold for 24 hours before declaring the release stable.  
 **Stable declaration:** Engineering manager sign-off after 24-hour observation window.
@@ -79,10 +79,10 @@ rate_limits:
     window_seconds: 60
     max_requests: 500
   overrides:
-    caller-highvolume-partner:
+    tenant-highvolume-partner:
       window_seconds: 60
       max_requests: 2000
-    caller-internal-ops:
+    tenant-internal-ops:
       window_seconds: 60
       max_requests: 10000
 ```
@@ -96,7 +96,7 @@ Config is loaded at startup and cached for 30 seconds. A hot reload does not req
 ### Dashboards to watch
 
 - Beacon request rate by status code (200 / 400 / 429 / 500)
-- `beacon_ratelimiter_accepted_total` and `beacon_ratelimiter_rejected_total` (per caller)
+- `beacon_ratelimiter_accepted_total` and `beacon_ratelimiter_rejected_total` (per tenant)
 - `beacon_ratelimiter_redis_error_total` (should remain 0)
 - `beacon_request_duration_p50`, `p95`, `p99` (latency must not degrade)
 - Redis memory usage and hit rate
@@ -105,10 +105,10 @@ Config is loaded at startup and cached for 30 seconds. A hot reload does not req
 
 | Metric | Target | Alert threshold |
 |---|---|---|
-| 429 rate (all callers) | < 0.5% of requests | > 1% triggers rollback review |
+| 429 rate (all tenants) | < 0.5% of requests | > 1% triggers rollback review |
 | `beacon_ratelimiter_redis_error_total` | 0 | Any nonzero value triggers on-call page |
 | Request latency p99 | Within 5% of pre-release baseline | > 10% increase triggers rollback review |
-| Caller-reported incidents | 0 | Any incident triggers rollback review |
+| Tenant-reported incidents | 0 | Any incident triggers rollback review |
 | Retry queue depth (from ADR-0004) | No change from baseline | > 20% increase in queue depth triggers review |
 
 ### Alerts to configure before Stage 1
@@ -127,17 +127,17 @@ Rollback is a config toggle — rate limiting can be disabled without a code dep
 
 Any of the following warrants immediate rollback discussion:
 
-- 429 rate exceeds 1% across all callers for more than 5 minutes.
+- 429 rate exceeds 1% across all tenants for more than 5 minutes.
 - Any Redis error from the rate limiter in production.
 - p99 latency exceeds 110% of baseline for more than 5 minutes.
-- One or more callers report unexpected request rejections.
+- One or more tenants report unexpected request rejections.
 - On-call engineer cannot determine root cause within 30 minutes of an anomaly.
 
 ### Rollback procedure
 
 1. Set `rate_limits.enabled: false` in `config/rate_limits.yaml` and deploy the config change (no code change required; takes effect within 30 seconds via hot reload).
 2. Confirm 429 rate drops to 0 in dashboards.
-3. Confirm caller-reported issues resolve.
+3. Confirm tenant-reported issues resolve.
 4. Page the delivery engineer and engineering manager with a brief incident summary.
 5. Open a postmortem issue (see [templates/incident-postmortem.md](../templates/incident-postmortem.md)).
 
@@ -151,7 +151,7 @@ Any of the following warrants immediate rollback discussion:
 
 | Audience | Channel | Message | When |
 |---|---|---|---|
-| All production callers | API changelog email | Rate limiting going live; quota values; 429 behavior; `Retry-After` header docs | 5 business days before Stage 2 |
+| All production tenants | API changelog email | Rate limiting going live; quota values; 429 behavior; `Retry-After` header docs | 5 business days before Stage 2 |
 | High-volume partners | Direct message from on-call lead | Same as above + offer to review quota needs | 7 business days before Stage 2 |
 | Internal team | Team channel | Stage-by-stage rollout schedule; escalation path | Day of Stage 1 |
 | On-call engineer | Runbook + briefing | What to watch, alert meanings, rollback steps | Before Stage 1 |

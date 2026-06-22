@@ -132,11 +132,11 @@ The goal is not to eliminate AI from the workflow. It is to stay aware of where 
 ```text
              │  Low Impact  │  Medium Impact  │  High Impact  │  Critical Impact
 ─────────────┼──────────────┼─────────────────┼───────────────┼──────────────────
-High         │              │  Silent Logic   │  Over-Trust   │
-Likelihood   │              │  Errors (some)  │  of AI        │
+High         │              │  Silent Logic   │  Over-Trust   │  Hallucinated
+Likelihood   │              │  Errors (some)  │  of AI        │  APIs
 ─────────────┼──────────────┼─────────────────┼───────────────┼──────────────────
-Medium       │              │  Scope Drift    │  Hallucinated │  Security
-Likelihood   │              │  Data Handling  │  APIs         │  Regressions
+Medium       │              │  Scope Drift    │               │  Security
+Likelihood   │              │  Data Handling  │               │  Regressions
 ─────────────┼──────────────┼─────────────────┼───────────────┼──────────────────
 Low          │              │                 │  Supply-Chain │
 Likelihood   │              │                 │  Risk         │

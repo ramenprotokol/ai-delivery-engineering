@@ -81,29 +81,29 @@ Run time: milliseconds. No network, no database, no side effects.
 ```typescript
 // src/routes/send.integration.test.ts
 
-describe('POST /v1/messages/send — rate limiting', () => {
+describe('POST /v1/send — rate limiting', () => {
   beforeEach(() => resetRateLimitStore());
 
   it('allows requests under the limit', async () => {
-    const response = await sendRequest({ apiKey: 'key-001' });
+    const response = await sendRequest({ tenantId: 'tenant-001' });
     expect(response.status).toBe(200);
   });
 
   it('returns 429 when the limit is exceeded', async () => {
-    await exhaust1000Requests({ apiKey: 'key-001' });
-    const response = await sendRequest({ apiKey: 'key-001' });
+    await exhaust500Requests({ tenantId: 'tenant-001' });
+    const response = await sendRequest({ tenantId: 'tenant-001' });
     expect(response.status).toBe(429);
   });
 
   it('includes Retry-After in the 429 response', async () => {
-    await exhaust1000Requests({ apiKey: 'key-001' });
-    const response = await sendRequest({ apiKey: 'key-001' });
+    await exhaust500Requests({ tenantId: 'tenant-001' });
+    const response = await sendRequest({ tenantId: 'tenant-001' });
     expect(response.headers['retry-after']).toBeDefined();
   });
 
-  it('rate limit is per API key, not global', async () => {
-    await exhaust1000Requests({ apiKey: 'key-001' });
-    const response = await sendRequest({ apiKey: 'key-002' });
+  it('rate limit is per tenant, not global', async () => {
+    await exhaust500Requests({ tenantId: 'tenant-001' });
+    const response = await sendRequest({ tenantId: 'tenant-002' });
     expect(response.status).toBe(200);
   });
 });
@@ -132,7 +132,7 @@ BASE_URL="${BEACON_BASE_URL:-https://beacon-staging.example.invalid}"
 echo "--- Beacon smoke test ---"
 
 RESPONSE=$(curl -s -w "\n%{http_code}" \
-  -X POST "$BASE_URL/v1/messages/send" \
+  -X POST "$BASE_URL/v1/send" \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"channel":"email","to":"smoke@example.invalid","subject":"Smoke","body":"ok"}')
@@ -186,8 +186,8 @@ it('calls rateLimitMiddleware', () => {
 
 ```typescript
 it('returns 429 with Retry-After when the rate limit is exceeded', async () => {
-  await exhaust1000Requests({ apiKey: 'key-001' });
-  const response = await sendRequest({ apiKey: 'key-001' });
+  await exhaust500Requests({ tenantId: 'tenant-001' });
+  const response = await sendRequest({ tenantId: 'tenant-001' });
   expect(response.status).toBe(429);
   expect(response.headers['retry-after']).toMatch(/^\d+$/);
 });
@@ -207,7 +207,7 @@ Before accepting any test (AI-generated or otherwise), confirm it can fail. Intr
 
 When a bug is found and fixed, a test must be added that would have caught it. The test documents the specific failure mode and prevents recurrence.
 
-**Beacon example.** A bug is found where `POST /v1/messages/send` with a missing `body` field returns `500` instead of `400`. After the fix:
+**Beacon example.** A bug is found where `POST /v1/send` with a missing `body` field returns `500` instead of `400`. After the fix:
 
 ```typescript
 it('returns 400 when body field is missing', async () => {

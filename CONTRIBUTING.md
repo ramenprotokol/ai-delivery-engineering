@@ -131,17 +131,15 @@ The CI pipeline (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)) run
 **Markdown lint:**
 
 ```bash
-npx markdownlint-cli "**/*.md" --ignore node_modules
+npx markdownlint-cli2 "**/*.md"
 ```
 
-The project uses default markdownlint rules with these exceptions (defined in `.markdownlint.json` if present):
-
-- MD013 (line length) is not enforced — wrap lines where it makes sense for readability.
+The command auto-discovers `.markdownlint-cli2.jsonc` at the repo root — no extra flags needed. See that file for the full rule set.
 
 **Link check:**
 
 ```bash
-npx markdown-link-check docs/**/*.md templates/**/*.md checklists/**/*.md examples/**/*.md *.md
+lychee --config lychee.toml .
 ```
 
 Or run the full CI check locally with:

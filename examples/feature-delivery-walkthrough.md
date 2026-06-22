@@ -9,7 +9,7 @@ This is a synthetic end-to-end demonstration of delivering a non-trivial feature
 **System:** Beacon (fictional transactional notification API)
 **Feature:** Per-tenant rate limiting on `POST /v1/send`
 **Trigger:** Repeated incidents where a single tenant's burst traffic delayed delivery for other tenants. The on-call engineer flagged this in three consecutive incident reviews.
-**Outcome target:** No single tenant can consume more than 20% of send throughput in any 10-second window. Tenants that exceed the limit receive a `429` response with a `Retry-After` header. No tenant's traffic affects another's.
+**Outcome target:** No single tenant can consume more than 20% of send throughput in any 60-second window. Tenants that exceed the limit receive a `429` response with a `Retry-After` header. No tenant's traffic affects another's.
 
 ---
 
@@ -51,7 +51,7 @@ ttl:  2x the window size (auto-expire stale sets)
 
 **Failure mode:** If Redis is unavailable, rate limiting fails open. Beacon sends the notification and logs the Redis error. The reasoning: a temporary Redis outage should not cause 429s for all tenants. This is a deliberate tradeoff, documented in the ADR.
 
-**ADR filed:** See [`examples/sample-architecture-decision-record.md`](sample-architecture-decision-record.md) — the completed ADR for this decision.
+**Related ADR:** See [`examples/sample-architecture-decision-record.md`](sample-architecture-decision-record.md) — an adjacent decision from the same release covering the retry-queue backing store (ADR-0004: Retry Queue Backing Store).
 
 The design doc went through one review cycle. A reviewer asked whether the sliding window approach would cause thundering-herd retries if many tenants hit the limit simultaneously. The delivery engineer added the `Retry-After` header with per-tenant jitter (random offset ±2s) to mitigate this.
 
@@ -68,8 +68,8 @@ The delivery engineer wrote a prompt describing the algorithm and the existing R
 ```text
 Context: I have a Redis client with methods get(), set(), zadd(), zrangebyscore(),
 zremrangebyscore(), expire(). I need a sliding window rate limiter:
-- Window: configurable, default 10 seconds
-- Limit: configurable per tenant, default 1000 requests/window
+- Window: configurable, default 60 seconds
+- Limit: configurable per tenant, default 500 requests/window
 - Key pattern: rate:<tenant_id>
 - Returns: { allowed: bool, count: int, limit: int, reset_at: unix_ms }
 - On Redis error: log and return { allowed: true, ... } (fail open)
@@ -100,7 +100,7 @@ AI generated the test file structure and the happy-path test cases. The delivery
 From the AI change log artifact (format: [`templates/ai-change-log.md`](../templates/ai-change-log.md)):
 
 ```text
-## 2024-03-14 — Rate limiter core function
+## 2026-04-14 — Rate limiter core function
 
 Tool: Claude Code
 Prompt: [see above]
@@ -124,7 +124,7 @@ The test plan was written before the implementation started (see [`examples/samp
 ```typescript
 // Boundary: request at exactly the limit
 it('allows the Nth request and blocks the N+1th', async () => {
-  const limiter = createRateLimiter({ limit: 5, windowMs: 10_000 });
+  const limiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
   for (let i = 0; i < 5; i++) {
     const result = await limiter.check('tenant-abc');
     expect(result.allowed).toBe(true);
@@ -262,7 +262,7 @@ Approver: the second engineer who reviewed the PR. Decision: Go.
 |----------|----------|
 | Scope note | Tracking issue (internal) |
 | Design doc | Tracking issue (internal) |
-| ADR | [`examples/sample-architecture-decision-record.md`](sample-architecture-decision-record.md) |
+| ADR (adjacent — retry-queue backing store) | [`examples/sample-architecture-decision-record.md`](sample-architecture-decision-record.md) |
 | AI change log | [`templates/ai-change-log.md`](../templates/ai-change-log.md) |
 | Test plan | [`examples/sample-test-plan.md`](sample-test-plan.md) |
 | Pre-merge checklist | [`checklists/pre-merge.md`](../checklists/pre-merge.md) |

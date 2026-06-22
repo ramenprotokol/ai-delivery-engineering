@@ -14,7 +14,7 @@ Use this template before any significant change: a new feature, a large refactor
 | Reviewers | Roles |
 | Date | YYYY-MM-DD |
 | Status | Draft / Reviewed / Accepted |
-| Linked ADR / Design Doc | e.g. [ADR-007](../examples/sample-architecture-decision-record.md) |
+| Linked ADR / Design Doc | e.g. [ADR-0004](../examples/sample-architecture-decision-record.md) |
 
 ---
 

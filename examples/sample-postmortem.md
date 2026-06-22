@@ -14,7 +14,7 @@
 
 ## Summary
 
-During the Stage 4 (100% rollout) of Beacon v1.3.0, a configuration error set the default caller quota to `5` requests per 60-second window instead of `500`. The error was introduced during a last-minute config edit to address a formatting concern flagged in the go/no-go review. The misconfigured value took effect when the rate limiter reloaded config at 14:07 UTC. For 22 minutes, roughly 4% of production notification requests were rejected with HTTP 429. The affected callers were those whose request rate exceeded 5 requests per minute — primarily webhook delivery and batch notification workloads. The issue was detected via alert at 14:09 UTC and resolved at 14:29 UTC by deploying the corrected config.
+During the Stage 4 (100% rollout) of Beacon v1.3.0, a configuration error set the default tenant quota to `5` requests per 60-second window instead of `500`. The error was introduced during a last-minute config edit to address a formatting concern flagged in the go/no-go review. The misconfigured value took effect when the rate limiter reloaded config at 14:07 UTC. For 22 minutes, roughly 4% of production notification requests were rejected with HTTP 429. The affected tenants were those whose request rate exceeded 5 requests per 60-second window — primarily webhook delivery and batch notification workloads. The issue was detected via alert at 14:09 UTC and resolved at 14:29 UTC by deploying the corrected config.
 
 No data was lost. Callers with retry logic retried successfully after the fix. Callers without retry logic missed one delivery window; those notifications were replayed from the Beacon dead-letter set.
 
@@ -26,9 +26,9 @@ No data was lost. Callers with retry logic retried successfully after the fix. C
 |---|---|
 | Duration | 22 minutes (14:07–14:29 UTC) |
 | Notifications rejected (HTTP 429) | ~1,840 (est. 4% of traffic during window) |
-| Notifications unrecoverable | 0 (all replayed from dead-letter set or retried by callers) |
-| Callers affected | 3 of 47 production callers (those exceeding 5 req/min) |
-| Customer-visible impact | Delayed notifications for 3 callers; no permanent data loss |
+| Notifications unrecoverable | 0 (all replayed from dead-letter set or retried by tenants) |
+| Tenants affected | 3 of 47 production tenants (those exceeding 5 req per 60-second window) |
+| Customer-visible impact | Delayed notifications for 3 tenants; no permanent data loss |
 | Revenue impact | None identified |
 
 ---
@@ -42,12 +42,12 @@ All times UTC.
 | **2026-04-19 12:30** | Engineering manager flags in go/no-go review: "double-check the default quota value — looks like a lot of zeros." |
 | **13:45** | Delivery engineer edits `config/rate_limits.yaml` to address the comment. Intended change: confirm `500` is correct. Actual change: value is saved as `5` due to a digit dropped during editing. The edit is not reviewed by a second engineer before deploy. |
 | **13:52** | Config change deployed to production via hot reload. No immediate error (the value `5` is syntactically valid). |
-| **13:52–14:07** | Low-traffic period; no caller exceeds 5 req/min. Misconfiguration is not visible in metrics. |
-| **14:07** | High-volume webhook batch job starts. Caller `beacon-webhook-batch` sends ~120 req/min. Rate limiter begins rejecting at request 6 of each 60-second window. |
+| **13:52–14:07** | Low-traffic period; no tenant exceeds 5 requests per 60-second window. Misconfiguration is not visible in metrics. |
+| **14:07** | High-volume webhook batch job starts. Tenant `beacon-webhook-batch` sends ~120 req/min. Rate limiter begins rejecting at request 6 of each 60-second window. |
 | **14:09** | Alert fires: `BeaconRateLimiter429SpikeAlert` — 429 rate exceeds 1% over 5-minute window. |
-| **14:10** | On-call engineer acknowledges alert. Initial hypothesis: a caller is exceeding their legitimate quota. |
-| **14:14** | On-call engineer queries Redis: `ZCARD beacon:retry:production` shows 400+ pending retries — unusual spike. Begins suspecting a systemic issue rather than one misbehaving caller. |
-| **14:16** | On-call engineer queries `beacon_ratelimiter_rejected_total` broken down by caller — sees 3 different callers being rejected, not just one. Escalates to delivery engineer. |
+| **14:10** | On-call engineer acknowledges alert. Initial hypothesis: a tenant is exceeding their legitimate quota. |
+| **14:14** | On-call engineer queries Redis: `ZCARD beacon:retry:production` shows 400+ pending retries — unusual spike. Begins suspecting a systemic issue rather than one misbehaving tenant. |
+| **14:16** | On-call engineer queries `beacon_ratelimiter_rejected_total` broken down by tenant — sees 3 different tenants being rejected, not just one. Escalates to delivery engineer. |
 | **14:19** | Delivery engineer joins. Checks effective quota config via `/debug/config` endpoint: sees `default.max_requests: 5`. Immediately identifies the root cause. |
 | **14:21** | Delivery engineer corrects `config/rate_limits.yaml`: `max_requests: 500`. Submits for review. Backend engineer approves in 2 minutes (expedited, both online). |
 | **14:25** | Corrected config deployed. Rate limiter hot-reloads within 30 seconds. |
@@ -74,7 +74,7 @@ The contributing conditions that allowed a single-digit typo to reach production
 ## What Went Well
 
 - The `BeaconRateLimiter429SpikeAlert` fired within 2 minutes of the issue becoming visible in metrics — exactly as designed in the release plan.
-- The on-call engineer correctly identified a systemic problem (multiple callers rejected) rather than chasing a single-caller explanation, which accelerated escalation.
+- The on-call engineer correctly identified a systemic problem (multiple tenants rejected) rather than chasing a single-tenant explanation, which accelerated escalation.
 - The `/debug/config` endpoint (added as part of v1.3.0 observability work) exposed the effective running config in under 30 seconds, cutting diagnosis time significantly.
 - The rollback and correction path was fast: 10 minutes from root cause identified to fix deployed.
 - The dead-letter queue introduced in ADR-0004 captured all rejected jobs, enabling full replay with no notification loss.
@@ -110,7 +110,7 @@ The contributing conditions that allowed a single-digit typo to reach production
 
 **Schema validation catches syntax, not semantics.** A valid integer is not the same as a correct value. Range checks and sanity assertions in the config loader are cheap to write and would have caught this immediately at startup.
 
-**Observability pays off quickly.** The `/debug/config` endpoint, the dead-letter queue, and the per-caller rejection metric were all added as part of this release. Each one directly shortened the time to diagnosis or recovery. Good observability is not optional on features in the request hot path.
+**Observability pays off quickly.** The `/debug/config` endpoint, the dead-letter queue, and the per-tenant rejection metric were all added as part of this release. Each one directly shortened the time to diagnosis or recovery. Good observability is not optional on features in the request hot path.
 
 **Low-traffic windows are not a deployment health check.** Seeing "no errors for 15 minutes" after a config deploy does not mean the config is correct — it may mean the traffic that would reveal the error has not arrived yet. Stage gate checks should include a synthetic traffic test, not just passive metric observation.
 

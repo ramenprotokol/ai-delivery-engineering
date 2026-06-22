@@ -78,7 +78,7 @@ If you do not receive acknowledgment within 5 business days, you may follow up i
 - **No secrets committed.** The `.gitignore` excludes `.env`, `.env.*`, `*.pem`, `*.key`, and similar files.
 - **No credentials in examples.** All examples use synthetic placeholders (e.g., `Bearer <token>`, `API_KEY=<your-key-here>`).
 - **Minimal dependencies.** CI tooling is limited to well-maintained, widely used packages.
-- **Pinned Actions.** GitHub Actions workflows pin to specific SHA hashes where possible, not floating version tags.
+- **Pinned Actions.** GitHub Actions workflows pin to major-version tags (e.g. `actions/checkout@v4`) rather than floating `@latest` references.
 - **No user data.** The repository contains no personal data, customer records, or private system information. All examples use the synthetic Beacon/Atlas/Orchard universe.
 - **Branch protection.** The `main` branch requires a pull request and at least one approval before merge. Direct pushes are disabled.
 

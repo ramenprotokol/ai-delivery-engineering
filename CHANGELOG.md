@@ -19,7 +19,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 - `methodology-overview.md` — top-level map of the delivery methodology and how the pieces fit together
 - `principles.md` — the ten core principles governing AI-assisted delivery (validation-first, human accountability, etc.)
-- `glossary.md` — shared vocabulary for the repo (AI change log, delivery envelope, gate, human-in-the-loop, etc.)
+- `glossary.md` — shared vocabulary for the repo (AI change log, Delivery Gate, gate, human-in-the-loop, etc.)
 - `delivery-lifecycle.md` — end-to-end lifecycle from intake to production: phases, gates, handoffs
 - `ai-assisted-workflow.md` — where AI fits in the workflow, what it accelerates, and where humans stay in the loop
 - `human-in-the-loop.md` — decision model for when to require human review vs. allow AI autonomy
@@ -56,13 +56,13 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 **Examples** (`examples/`)
 
-- `feature-delivery-walkthrough.md` — complete worked example: Beacon rate-limit feature from intake to production using the full methodology
-- `bugfix-walkthrough.md` — worked example: diagnosing and shipping a fix for a silent data-loss bug in Beacon's event pipeline
-- `ai-assisted-refactor.md` — worked example: AI-assisted refactor of Atlas CLI authentication module with full human validation trail
-- `sample-architecture-decision-record.md` — filled ADR: choosing idempotency strategy for Beacon's notification delivery
-- `sample-test-plan.md` — filled test plan for Orchard task-assignment feature
-- `sample-release-plan.md` — filled release plan for Beacon v2.3.0
-- `sample-postmortem.md` — filled postmortem for a Beacon delivery-rate regression
+- `feature-delivery-walkthrough.md` — complete worked example: adding rate limiting to Beacon's send API, end-to-end through every lifecycle stage, artifact, AI-assist, and human decision
+- `bugfix-walkthrough.md` — worked example: Beacon notifications duplicating under retry — reproduce, root-cause, fix, regression test, postmortem note
+- `ai-assisted-refactor.md` — worked example: safe AI-assisted refactor of Atlas's config loader with characterization tests, small reversible steps, and human validation of unchanged behavior
+- `sample-architecture-decision-record.md` — filled ADR-0004: Beacon retry queue backing store (Redis sorted sets vs. SQS)
+- `sample-test-plan.md` — filled test plan for the Beacon rate-limiting feature
+- `sample-release-plan.md` — filled release plan for Beacon rate-limiting v1.3.0
+- `sample-postmortem.md` — filled postmortem for the Beacon rate-limit misconfiguration incident
 - `README.md` — index of all examples with context on how to read them
 
 **GitHub config** (`.github/`)
@@ -71,7 +71,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 - `ISSUE_TEMPLATE/bug_report.md` — structured bug report template
 - `ISSUE_TEMPLATE/feature_request.md` — structured feature request template
 - `ISSUE_TEMPLATE/config.yml` — disables blank issues; directs users to the correct template
-- `workflows/ci.yml` — CI workflow: lint markdown, validate links, check YAML and CFF syntax on every push and PR
+- `workflows/ci.yml` — CI workflow: lint Markdown (markdownlint-cli2) and run a non-blocking link check (lychee) on every push and PR
 
 **Root meta**
 
